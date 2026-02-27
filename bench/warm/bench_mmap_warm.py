@@ -8,6 +8,16 @@ N_RUNS          = int(os.environ["MEDIOBENCH_N_RUNS"])
 MEM_CEILING_GBS = float(os.environ["MEDIOBENCH_MEM_CEILING_GBS"])
 FILESIZE_GB     = float(os.environ["MEDIOBENCH_FILESIZE_GB"])
 
+
+def warmup_page_cache(path: str, block_bytes: int = 8 * 1024 * 1024) -> None:
+    # Best-effort warmup: stream the file once so the OS page cache is populated.
+    with open(path, "rb") as f:
+        while f.read(block_bytes):
+            pass
+
+
+warmup_page_cache(PATH)
+
 times = []
 
 for i in range(N_RUNS):

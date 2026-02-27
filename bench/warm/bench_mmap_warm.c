@@ -9,6 +9,8 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
+#define WARMUP_BLOCK (4 * 1024 * 1024)
+
 #include "bench_config.h"
 
 double now_seconds() {
@@ -17,11 +19,32 @@ double now_seconds() {
     return ts.tv_sec + ts.tv_nsec * 1e-9;
 }
 
+static void warmup_page_cache(const char *path) {
+    int fd = open(path, O_RDONLY);
+    if (fd < 0) return;
+
+    uint8_t *buf = malloc(WARMUP_BLOCK);
+    if (!buf) { close(fd); return; }
+
+    volatile uint64_t sink = 0;
+    ssize_t n;
+    while ((n = read(fd, buf, WARMUP_BLOCK)) > 0) {
+        for (ssize_t p = 0; p < n; p += 4096)
+            sink += buf[p];
+    }
+
+    free(buf);
+    close(fd);
+    (void)sink;
+}
+
 int main() {
     const char *path = mb_getenv_required_str("MEDIOBENCH_TIFF_PATH");
     const double filesize_gb = mb_getenv_required_double("MEDIOBENCH_FILESIZE_GB", 0.0, 1e9);
     const double mem_ceiling_gbs = mb_getenv_required_double("MEDIOBENCH_MEM_CEILING_GBS", 0.0, 1e6);
     const int n_runs = (int)mb_getenv_required_long("MEDIOBENCH_N_RUNS", 1, 1000);
+
+    warmup_page_cache(path);
 
     int fd = open(path, O_RDONLY);
     if (fd < 0) { perror("open"); return 1; }

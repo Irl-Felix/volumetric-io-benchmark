@@ -10,12 +10,33 @@
 #include <sys/mman.h>
 #include <math.h>
 
+#define WARMUP_BLOCK (4 * 1024 * 1024)
+
 #include "bench_config.h"
 
 double now_seconds() {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return ts.tv_sec + ts.tv_nsec * 1e-9;
+}
+
+static void warmup_page_cache(const char *path) {
+    int fd = open(path, O_RDONLY);
+    if (fd < 0) return;
+
+    uint8_t *buf = malloc(WARMUP_BLOCK);
+    if (!buf) { close(fd); return; }
+
+    volatile uint64_t sink = 0;
+    ssize_t n;
+    while ((n = read(fd, buf, WARMUP_BLOCK)) > 0) {
+        for (ssize_t p = 0; p < n; p += 4096)
+            sink += buf[p];
+    }
+
+    free(buf);
+    close(fd);
+    (void)sink;
 }
 
 int main() {
@@ -26,6 +47,8 @@ int main() {
     const int n_slices = (int)mb_getenv_required_long("MEDIOBENCH_N_SLICES", 1, 100000000);
     const size_t slice_bytes = (size_t)mb_getenv_required_long("MEDIOBENCH_SLICE_BYTES", 1, (long)INT_MAX);
     const size_t data_offset = (size_t)mb_getenv_required_long("MEDIOBENCH_DATA_OFFSET", 0, (long)INT_MAX);
+
+    warmup_page_cache(path);
 
     int fd = open(path, O_RDONLY);
     if (fd < 0) { perror("open"); return 1; }
