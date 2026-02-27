@@ -1,0 +1,19 @@
+# local config (user-specific paths)
+config.env
+
+# local input data (often large/private)
+data/
+
+# build artifacts
+bin/
+
+# benchmark outputs
+results/
+
+# python cache
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# editor
+.vscode/
