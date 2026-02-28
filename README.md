@@ -1,4 +1,5 @@
-> English ONLY available in [README-en.md](README-en.md)
+English ONLY readme available → [EN README](README-en.md)  
+Full experimental results and hardware characterization → [EXPERIMENT](RESULTS.md)
 
 # Characterizing I/O Bottlenecks in Volumetric Medical Image Loading Pipelines /  體積式醫學影像載入流程中的 I/O 瓶頸分析
 
